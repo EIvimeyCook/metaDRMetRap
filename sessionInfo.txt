@@ -1,0 +1,41 @@
+R version 4.4.2 (2024-10-31)
+Platform: aarch64-apple-darwin20
+Running under: macOS Sequoia 15.3.2
+
+Matrix products: default
+BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+time zone: Europe/London
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods  
+[7] base     
+
+other attached packages:
+ [1] emmeans_1.10.6      gt_0.11.1           janitor_2.2.1      
+ [4] patchwork_1.3.0     orchaRd_2.0         metafor_4.6-0      
+ [7] numDeriv_2016.8-1.1 metadat_1.2-0       Matrix_1.7-1       
+[10] lubridate_1.9.4     forcats_1.0.0       stringr_1.5.1      
+[13] dplyr_1.1.4         purrr_1.0.2         readr_2.1.5        
+[16] tidyr_1.3.1         tibble_3.2.1        ggplot2_3.5.1      
+[19] tidyverse_2.0.0    
+
+loaded via a namespace (and not attached):
+ [1] utf8_1.2.4         generics_0.1.3     xml2_1.3.6        
+ [4] stringi_1.8.4      lattice_0.22-6     hms_1.1.3         
+ [7] digest_0.6.37      magrittr_2.0.3     estimability_1.5.1
+[10] grid_4.4.2         timechange_0.3.0   mvtnorm_1.3-2     
+[13] fastmap_1.2.0      fansi_1.0.6        scales_1.3.0      
+[16] cli_3.6.3          rlang_1.1.4        munsell_0.5.1     
+[19] withr_3.0.2        tools_4.4.2        tzdb_0.4.0        
+[22] coda_0.19-4.1      colorspace_2.1-1   mathjaxr_1.6-0    
+[25] vctrs_0.6.5        R6_2.5.1           lifecycle_1.0.4   
+[28] snakecase_0.11.1   pkgconfig_2.0.3    pillar_1.9.0      
+[31] gtable_0.3.6       glue_1.8.0         tidyselect_1.2.1  
+[34] rstudioapi_0.17.1  xtable_1.8-4       farver_2.1.2      
+[37] htmltools_0.5.8.1  nlme_3.1-166       compiler_4.4.2    
