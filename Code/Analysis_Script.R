@@ -9,54 +9,92 @@ library(patchwork)
 library(janitor)
 library(gt)
 library(emmeans)
+library(showtext)
+library(ggbeeswarm)
+library(ggnewscale)
+library(cowplot)
+library(rphylopic)
+library(ggthemes)
+font_add_google("Montserrat")
+showtext_auto()
+showtext_opts(dpi = 600)
+
 
 sink("sessionInfo.txt")
 sessionInfo()
 sink()
-##write_delim()####### read in data and create cv for everything if it exists #######
+####### read in data and create cv for everything if it exists #######
 dat <- read_csv("Data/analysis_data.csv") %>%
   mutate(
     cv_control = na_if(sd_control / m_control, Inf),
     cv_experimental = na_if(sd_treatment / m_treatment, Inf)
   ) %>%
   janitor::clean_names() %>%
-  select(-c(dose_compared_to_al, age_on_treatment, treatment_length)) %>%
   mutate(
     treatment_type = as.factor(treatment_type),
     treatment_overall = as.factor(treatment_overall),
     species = as.factor(species),
     sex = as.factor(sex),
     id = as.factor(id),
-    title = as.factor(title)
-  )
+    m_measure = as.factor(m_measure),
+    title = as.factor(title),
+    mice900_keep = as.factor(mice900_keep)
+  ) %>%
+  mutate(measure_plot = case_when(
+    m_measure == "mean" ~ "Means",
+    m_measure == "median" ~ "Medians"
+  )) %>%
+  mutate(sex_plot = case_when(
+    sex == "male" ~ "Male",
+    sex == "female" ~ "Female",
+    sex == "mixed" ~ "Mixed"
+  )) %>%
+  mutate(species = fct_relevel(species, c("dogs", 
+                          "mice",
+                          "mouse lemur",
+                          "rats",
+                          "rhesus monkeys",
+                          "stickleback",
+                         "redtail killifish", 
+                         "turqoise killifish")))
 
 ####### summarise overall number of titles,measures,species,sex,treatments #######
 length(unique(dat$title))
 
 dat %>%
   group_by(m_measure) %>%
-  summarise(n = n(),
-            n_stud = n_distinct(title))
+  summarise(
+    n = n(),
+    n_stud = n_distinct(title)
+  )
 
 dat %>%
   group_by(species) %>%
-  summarise(n = n(),
-            n_stud = n_distinct(title))
+  summarise(
+    n = n(),
+    n_stud = n_distinct(title)
+  )
 
 dat %>%
   group_by(sex) %>%
-  summarise(n = n(),
-            n_stud = n_distinct(title))
+  summarise(
+    n = n(),
+    n_stud = n_distinct(title)
+  )
 
 dat %>%
   group_by(treatment_overall) %>%
-  summarise(n = n(),
-            n_stud = n_distinct(title))
+  summarise(
+    n = n(),
+    n_stud = n_distinct(title)
+  )
 
 dat %>%
   group_by(treatment_type) %>%
-  summarise(n = n(),
-            n_stud = n_distinct(title))
+  summarise(
+    n = n(),
+    n_stud = n_distinct(title)
+  )
 
 ####### geary function to test for outliers #######
 geary <- function(mean, sd, n) {
@@ -69,8 +107,7 @@ dat <- dat %>%
     geary_control = geary(m_control, sd_control, n_control),
     geary_trt = geary(m_treatment, sd_treatment, n_treatment),
     geary_test = ifelse(geary_control >= 3 & geary_trt >= 3, "pass", "fail")
-  ) # %>%
-# filter(is.na(geary_test) | geary_test == "pass")
+  )
 
 ####### How many fail? #######
 geary_res <- dat %>%
@@ -119,6 +156,7 @@ dat$inv_n_tilda <- with(dat, (n_control + n_treatment) / (n_control * n_treatmen
 dat$sqrt_inv_n_tilda <- with(dat, sqrt(inv_n_tilda))
 dat$year.c <- as.vector(scale(dat$year, scale = F))
 
+
 ##################### treatment effects #####################
 ####### model with mean + summary #######
 method_AC_meta_mean <- rma.mv(lnrr_laj ~ treatment_overall,
@@ -148,6 +186,8 @@ mean_treatment <- orchaRd_table(
 png("mean_treatment.png", res = 600, width = 8, height = 10, units = "in")
 print(mean_treatment)
 dev.off()
+
+
 
 ####### model with pub bias mean + summary #######
 method_AC_meta_mean_pub <- rma.mv(
@@ -337,49 +377,154 @@ all_mods <- bind_rows(
   all_model,
   median_model,
   mean_model
-)
+) %>%
+  mutate(label = paste0(
+    formatC(estimate, format = "f", digits = 3), " [",
+    formatC(lowerCL, format = "f", digits = 3), ", ",
+    formatC(upperCL, format = "f", digits = 3), "]"
+  ))
+
+# rphylopic images
+mice_image <- pick_phylopic(name = "Mus musculus", n = 1, view = 1)
+rat_image <- pick_phylopic(name = "Rattus norvegicus", n = 1, view = 1)
+dog_image <- pick_phylopic(name = "Canis lupus familiaris", n = 1, view = 1)
+killifish1_image <- pick_phylopic(name = "Nothobranchius", n = 1, view = 1)
+killifish2_image <- pick_phylopic(name = "Nothobranchius furzeri", n = 1, view = 1)
+rhesus_image <- pick_phylopic(name = "Macaca mulatta", n = 1, view = 1)
+lemur_image <- pick_phylopic(name = "Microcebus murinus", n = 1, view = 1)
+sb_image <- pick_phylopic(name = "Gasterosteus aculeatus", n = 1, view = 1)
+
+get_attribution(uuid = "128043bd-2d06-47bc-a53b-b6f0bcf214e4")
+
+
 
 ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat,
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(treatment_overall),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B)
+    ),
+    alpha = 0.4, show.legend = F
+  ) +
+  labs(colour = "Species") +
+  ggthemes::scale_colour_colorblind() +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods,
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.5,
+    linewidth = 1.3,
+    position = position_dodge(width = 0.6)
+  ) +
   geom_point(
     data = all_mods, aes(
       x = estimate,
-      y = name,
+      y = fct_rev(name),
       colour = model,
       shape = data
     ),
     size = 4,
+    stroke = 1.7,
     position = position_dodge(width = 0.6)
   ) +
-  geom_errorbarh(
-    data = all_mods, aes(
-      x = estimate,
-      y = name,
-      xmin = lowerCL,
-      xmax = upperCL,
-      colour = model,
-      shape = data,
-      linetype = name
-    ),
-    height = 0.4,
-    linewidth = 1.1,
-    position = position_dodge(width = 0.6),
-    show.legend = F
-  ) +
-  theme_bw(base_size = 13) +
   geom_vline(
     xintercept = 0,
     linetype = "dotted"
   ) +
   labs(
-    colour = "Model Type",
-    shape = "Measure Type",
+    colour = "Publication Bias",
+    shape = "Measure",
     x = "Log Response Ratio",
-    y = "Treatment",
+    y = NULL,
+    size = NULL
   ) +
-  theme(legend.position = "bottom") +
-  scale_color_brewer(palette = "Dark2") -> overall
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 25, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 25, face = "bold"),
+    axis.text.x = element_text(size = 21),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "inside", 
+    legend.position.inside =  c(0.8, 0.5),
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(20, 20, 150, 20)
+  ) +
+  guides(size = "none") +
+  #ggrepel::geom_text_repel(
+   # data = all_mods,
+    #aes(
+    #  y = fct_rev(name),
+     # x = upperCL,
+     # label = label,
+      #colour = model,
+      #shape = data
+    #),
+    #position = position_dodge(width = 0.6),
+    #show.legend = F,
+    #size = ,
+    ##hjust = -1.2,
+    #point.padding = 0.3,
+    #box.padding = 0.3,
+    #segment.curvature = -0.3,
+    #segment.ncp = 3,
+    #segment.angle = 20
+  #) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top"),
+    shape = guide_legend(reverse = TRUE, title.position = "top")
+  ) +
+  scale_x_continuous(limits = c(-2, 2)) -> overall
 
-ggsave("Overall.png", overall, dpi = 600, width = 20, height = 8)
+legend_species <- cowplot::get_legend(
+  ggplot() +
+    ggbeeswarm::geom_quasirandom(
+      data = dat,
+      aes(
+        x = lnrr_laj,
+        y = fct_rev(treatment_overall),
+        colour = species
+      ),
+      alpha = 0.4
+    ) +
+    theme_bw() +
+    theme(
+      legend.background = element_rect(fill = "transparent", colour = "transparent"),
+      legend.spacing.x = unit(10, "cm"),
+      legend.position = "right",
+      legend.direction = "horizontal",
+      legend.box = "horizontal",
+      legend.key.width = unit(8, "cm"),
+      legend.key.height = unit(1, "cm"),
+      legend.text = element_text(size = 20),
+      text = element_text(size = 20, family = "Montserrat"),
+    ) +
+    guides(colour = guide_legend(override.aes = list(size = 7))) +
+    ggthemes::scale_colour_colorblind() +
+    labs(colour = "Species")
+)
+
+plot_with_species_inside <- cowplot::ggdraw(overall) +
+  cowplot::draw_grob(legend_species, x = 0.5, y = -0.43, hjust = 0.5)
+
+
+ggsave("Overall.pdf", plot_with_species_inside, dpi = 600, width = 22, height = 12.5)
 
 
 ####### i2 for full model w/ table #######
@@ -434,7 +579,7 @@ method_AC_meta_all <- rma.mv(lnrr_laj ~ treatment_overall,
 summary(method_AC_meta_all)
 
 method_AC_meta_all_pub <- rma.mv(
-  lnrr_laj ~treatment_overall + inv_n_tilda +
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
     year.c,
   V = v_lnrr_laj_1B,
   test = "t",
@@ -451,11 +596,11 @@ dat$treatment_overall <- relevel(dat$treatment_overall, ref = "Dietary restricti
 
 ##################### SEX effects #####################
 ####### Rap Mean #######
-sex_AC_Rap_mean <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_Rap_mean <- rma.mv(lnrr_laj ~ sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list(~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     m_measure == "mean",
     treatment_overall == "Rapamycin"
@@ -482,12 +627,12 @@ dev.off()
 
 ####### Rap Pub Bias Mean #######
 sex_AC_Rap_mean_pub <- rma.mv(
-  lnrr_laj ~ -1+sex + inv_n_tilda +
+  lnrr_laj ~ sex + inv_n_tilda +
     year.c,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list(~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     m_measure == "mean",
     treatment_overall == "Rapamycin"
@@ -516,11 +661,11 @@ print(mean_sex_rap_pub)
 dev.off()
 
 ####### Rap Median #######
-sex_AC_Rap_median <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_Rap_median <- rma.mv(lnrr_laj ~sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list(~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     m_measure == "median",
     treatment_overall == "Rapamycin"
@@ -548,12 +693,12 @@ dev.off()
 
 ####### Rap Pub Bias Median #######
 sex_AC_Rap_median_pub <- rma.mv(
-  lnrr_laj ~ -1+sex + inv_n_tilda +
+  lnrr_laj ~ sex + inv_n_tilda +
     year.c,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list( ~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     m_measure == "median",
     treatment_overall == "Rapamycin"
@@ -582,11 +727,11 @@ print(median_sex_rap_pub)
 dev.off()
 
 ####### Rap All #######
-sex_AC_Rap_all <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_Rap_all <- rma.mv(lnrr_laj ~ sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list(~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     treatment_overall == "Rapamycin"
   )
@@ -612,12 +757,12 @@ dev.off()
 
 ####### Rap Pub Bias All #######
 sex_AC_Rap_all_pub <- rma.mv(
-  lnrr_laj ~ -1+sex + inv_n_tilda +
+  lnrr_laj ~ sex + inv_n_tilda +
     year.c,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
-  random = list(~ 1 | species, ~ 1 | title, ~ 1 | id),
+  random = list(~ 1 | title, ~ 1 | id),
   data = dat %>% filter(
     treatment_overall == "Rapamycin"
   )
@@ -645,7 +790,7 @@ print(all_sex_rap_pub)
 dev.off()
 
 ####### Met Mean #######
-sex_AC_Met_mean <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_Met_mean <- rma.mv(lnrr_laj ~ sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
@@ -776,7 +921,7 @@ print(median_sex_met_pub)
 dev.off()
 
 ####### Met All #######
-sex_AC_Met_all <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_Met_all <- rma.mv(lnrr_laj ~ sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
@@ -839,7 +984,7 @@ print(all_sex_met_pub)
 dev.off()
 
 ####### DR Mean #######
-sex_AC_DR_mean <- rma.mv(lnrr_laj ~ -1+sex,
+sex_AC_DR_mean <- rma.mv(lnrr_laj ~ sex,
   V = v_lnrr_laj_1B,
   test = "t",
   method = "REML",
@@ -913,7 +1058,8 @@ sex_AC_DR_median <- rma.mv(lnrr_laj ~ sex,
   data = dat %>% filter(
     m_measure == "median",
     treatment_overall == "Dietary restriction"
-  )
+  ),
+  control = list(optimizer = "optim", optmethod = "Nelder-Mead")
 )
 
 summary(sex_AC_DR_median)
@@ -1108,50 +1254,289 @@ all_mods <- bind_rows(
   mean_model_rap,
   mean_model_met,
   mean_model_dr
-)
+) %>%
+  mutate(label = paste0(
+    formatC(estimate, format = "f", digits = 3), " [",
+    formatC(lowerCL, format = "f", digits = 3), ", ",
+    formatC(upperCL, format = "f", digits = 3), "]"
+  ))
 
 ggplot() +
-  geom_point(
-    data = all_mods, aes(
-      x = estimate,
-      y = name,
-      colour = model,
-      shape = data
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(treatment_overall == "Dietary restriction"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(sex_plot),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B),
+      group = treatment_overall
     ),
-    size = 4,
-    position = position_dodge(width = 0.6)
+    alpha = 0.4,
+    show.legend = F
   ) +
+  labs(colour = "Species") +
+  ggthemes::scale_colour_colorblind() +
+  ggnewscale::new_scale_color() +
   geom_errorbarh(
-    data = all_mods, aes(
+    data = all_mods %>% filter(treatment == "Dietary restriction"),
+    aes(
       x = estimate,
-      y = name,
+      y = fct_rev(name),
       xmin = lowerCL,
       xmax = upperCL,
       colour = model,
-      shape = data,
-      linetype = name
+      shape = data
     ),
-    height = 0.4,
-    linewidth = 1.1,
-    position = position_dodge(width = 0.6),
-    show.legend = F
+    height = 0.2,
+    linewidth = 0.7,
+    position = position_dodge(width = 0.6)
   ) +
-  theme_bw(base_size = 13) +
+  geom_point(
+    data = all_mods %>% filter(treatment == "Dietary restriction"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      colour = model,
+      shape = data
+    ),
+    size = 1.4,
+    stroke = 1.7,
+    position = position_dodge(width = 0.6)
+  ) +
   geom_vline(
     xintercept = 0,
     linetype = "dotted"
   ) +
   labs(
-    colour = "Model Type",
-    shape = "Measure Type",
+    colour = "Publication Bias",
+    shape = "Measure",
     x = "Log Response Ratio",
-    y = "Sex",
+    y = NULL,
+    size = NULL
   ) +
-  theme(legend.position = "bottom") +
-  ggthemes::scale_colour_colorblind() +
-  facet_grid(. ~ treatment) -> sex_plot
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 25, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 25, face = "bold"),
+    axis.text.x = element_text(size = 21),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "none", 
+    legend.position.inside =  c(0.8, 0.5),
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(20, 20, 20, 20)
+  ) +
+  guides(size = "none") +
+  scale_x_continuous(limits = c(-2, 2)) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5)),
+    shape = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5))
+  )   +
+  ggtitle("Dietary Restriction") -> sex_effect_plot_dr
 
-ggsave("Sex.png", sex_plot, dpi = 600, width = 20, height = 8)
+
+
+ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(treatment_overall == "Metformin"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(sex_plot),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B),
+      group = treatment_overall
+    ),
+    alpha = 0.4,
+    show.legend = F
+  ) +
+  labs(colour = "Species") +
+  scale_colour_manual(values = c("#E69F00", "#009E73", "#F0E442")) +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods %>% filter(treatment == "Metformin"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.2,
+    linewidth = 0.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(
+    data = all_mods %>% filter(treatment == "Metformin"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      colour = model,
+      shape = data
+    ),
+    size = 1.4,
+    stroke = 1.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dotted"
+  ) +
+  labs(
+    colour = "Publication Bias",
+    shape = "Measure",
+    x = "Log Response Ratio",
+    y = NULL,
+    size = NULL
+  ) +
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 25, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 25, face = "bold"),
+    axis.text.x = element_text(size = 21),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "inside", 
+    legend.position.inside =  c(0.8, 0.5),
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(20, 20, 20, 20)
+  ) +
+  guides(size = "none") +
+  scale_x_continuous(limits = c(-2, 2)) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5)),
+    shape = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5))
+  ) +
+  ggtitle("Metformin") -> sex_effect_plot_met
+
+
+ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(treatment_overall == "Rapamycin"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(sex_plot),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B),
+      group = treatment_overall
+    ),
+    alpha = 0.4,
+    show.legend = F
+  ) +
+  labs(colour = "Species") +
+  scale_colour_manual(values = c("#E69F00")) +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods %>% filter(treatment == "Rapamycin"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.2,
+    linewidth = 0.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(
+    data = all_mods %>% filter(treatment == "Rapamycin"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      colour = model,
+      shape = data
+    ),
+    size = 1.4,
+    stroke = 1.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dotted"
+  ) +
+  labs(
+    colour = "Publication Bias",
+    shape = "Measure",
+    x = "Log Response Ratio",
+    y = NULL,
+    size = NULL
+  )  +
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 25, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 25, face = "bold"),
+    axis.text.x = element_text(size = 21),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "none", 
+    legend.position.inside =  c(0.8, 0.5),
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(20, 20, 150, 20)
+  )  +
+  guides(size = "none") +
+  scale_x_continuous(limits = c(-2, 2)) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5)),
+    shape = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5))
+  ) +
+  ggtitle("Rapamycin") -> sex_effect_plot_rap
+
+all_sex_plot <- sex_effect_plot_dr/sex_effect_plot_met/sex_effect_plot_rap
+
+legend_species <- cowplot::get_legend(
+  ggplot() +
+    ggbeeswarm::geom_quasirandom(
+      data = dat,
+      aes(
+        x = lnrr_laj,
+        y = fct_rev(sex),
+        colour = species
+      ),
+      alpha = 0.4
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "right",
+      legend.direction = "horizontal",
+      legend.box = "horizontal",
+      legend.spacing.x = unit(4, "cm"),
+      legend.spacing.y = unit(2, "cm"),
+      legend.key.width = unit(3, "cm"),
+      legend.key.height = unit(3, "cm"),
+      legend.text = element_text(size = 14),
+      text = element_text(size = 16, family = "Montserrat"),
+      legend.background = element_rect(fill = "transparent", colour = "transparent"),
+      legend.box.background = element_rect(fill = "transparent", colour = "transparent")
+    ) +
+    guides(colour = guide_legend(override.aes = list(size = 7))) +
+    ggthemes::scale_colour_colorblind() +
+    labs(colour = "Species")
+)
+
+plot_with_species_inside <- cowplot::ggdraw(all_sex_plot) +
+  cowplot::draw_grob(legend_species, x = 0.5, y = -0.46, hjust = 0.5)
+
+ggsave("Sex.pdf", plot_with_species_inside, dpi = 600, width = 12.5, height = 23)
 
 
 ##################### DR method #####################
@@ -1380,49 +1765,123 @@ all_mods <- bind_rows(
   all_model,
   median_model,
   mean_model
-)
+) %>%
+  mutate(label = paste0(
+    formatC(estimate, format = "f", digits = 3), " [",
+    formatC(lowerCL, format = "f", digits = 3), ", ",
+    formatC(upperCL, format = "f", digits = 3), "]"
+  ))
 
 ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(treatment_overall == "Dietary restriction"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(treatment_type),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B)
+    ),
+    alpha = 0.4,
+    show.legend = F
+  ) +
+  labs(colour = "Species") +
+  ggthemes::scale_colour_colorblind() +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods,
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.5,
+    linewidth = 1.3,
+    position = position_dodge(width = 0.6)
+  ) +
   geom_point(
     data = all_mods, aes(
       x = estimate,
-      y = name,
+      y = fct_rev(name),
       colour = model,
       shape = data
     ),
     size = 4,
+    stroke = 1.7,
     position = position_dodge(width = 0.6)
   ) +
-  geom_errorbarh(
-    data = all_mods, aes(
-      x = estimate,
-      y = name,
-      xmin = lowerCL,
-      xmax = upperCL,
-      colour = model,
-      shape = data,
-      linetype = name
-    ),
-    height = 0.4,
-    linewidth = 1.1,
-    position = position_dodge(width = 0.6),
-    show.legend = F
-  ) +
-  theme_bw(base_size = 13) +
   geom_vline(
     xintercept = 0,
     linetype = "dotted"
   ) +
   labs(
-    colour = "Model Type",
-    shape = "Measure Type",
+    colour = "Publication Bias",
+    shape = "Measure",
     x = "Log Response Ratio",
-    y = "Restirction Method",
+    y = NULL,
+    size = NULL
+  )+
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 25, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 25, face = "bold"),
+    axis.text.x = element_text(size = 21),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "inside", 
+    legend.position.inside =  c(0.8, 0.5),
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(20, 20, 150, 50)
   ) +
-  theme(legend.position = "bottom") +
-  scale_color_brewer(palette = "Set2") -> DR_type
+  guides(size = "none")  +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top"),
+    shape = guide_legend(reverse = TRUE, title.position = "top")
+  ) +
+  scale_x_continuous(limits = c(-2, 2)) +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 10))-> DR_Type
 
-ggsave("DR_type.png", DR_type, dpi = 600, width = 20, height = 8)
+legend_species <- cowplot::get_legend(
+  ggplot() +
+    ggbeeswarm::geom_quasirandom(
+      data = dat,
+      aes(
+        x = lnrr_laj,
+        y = fct_rev(treatment_type),
+        colour = species
+      ),
+      alpha = 0.4
+    ) +
+    theme_bw() +
+    theme(
+      legend.background = element_rect(fill = "transparent", colour = "transparent"),
+      legend.spacing.x = unit(10, "cm"),
+      legend.position = "right",
+      legend.direction = "horizontal",
+      legend.box = "horizontal",
+      legend.key.width = unit(8, "cm"),
+      legend.key.height = unit(1, "cm"),
+      legend.text = element_text(size = 20),
+      text = element_text(size = 20, family = "Montserrat"),
+    ) +
+    guides(colour = guide_legend(override.aes = list(size = 7))) +
+    ggthemes::scale_colour_colorblind() +
+    labs(colour = "Species")
+)
+
+plot_with_species_inside <- cowplot::ggdraw(DR_Type) +
+  cowplot::draw_grob(legend_species, x = 0.5, y = -0.43, hjust = 0.5)
+
+ggsave("DR_type.pdf", plot_with_species_inside, dpi = 600, width = 24, height = 12.5)
+
 
 ##################### missing cases+ lajanueese adjustment for lnRR and variance #####################
 ####### create new data with different method #######
@@ -1453,7 +1912,8 @@ method_MC_meta_mean <- rma.mv(lnrr_laj ~ treatment_overall,
 summary(method_MC_meta_mean)
 summary_mean_2 <- orchaRd::mod_results(method_MC_meta_mean, mod = "treatment_overall", group = "title")
 plot_mean_2 <- orchaRd::orchard_plot(summary_mean_2,
-  xlab = "LogRR") + ggtitle("Mean")
+  xlab = "LogRR"
+) + ggtitle("Mean")
 
 plot_mean_2
 
@@ -1469,7 +1929,8 @@ method_MC_meta_median <- rma.mv(lnrr_laj ~ treatment_overall,
 summary(method_MC_meta_median)
 summary_median_2 <- orchaRd::mod_results(method_MC_meta_median, mod = "treatment_overall", group = "title")
 plot_median_2 <- orchaRd::orchard_plot(summary_median_2,
-  xlab = "LogRR") + ggtitle("Median")
+  xlab = "LogRR"
+) + ggtitle("Median")
 
 plot_median_2
 
@@ -1485,7 +1946,8 @@ method_MC_meta_all <- rma.mv(lnrr_laj ~ treatment_overall,
 summary(method_MC_meta_all)
 summary_all_2 <- orchaRd::mod_results(method_MC_meta_all, mod = "treatment_overall", group = "title")
 plot_all_2 <- orchaRd::orchard_plot(summary_all_2,
-  xlab = "LogRR") + ggtitle("All")
+  xlab = "LogRR"
+) + ggtitle("All")
 
 plot_all_2
 
@@ -1493,3 +1955,509 @@ plot_all_2
 all_plots <- (plot_mean_2 | plot_median_2 | plot_all_2) + plot_annotation(tag_levels = "A")
 
 ggsave("MC_plots.png", all_plots, dpi = 600, width = 20, height = 8)
+
+##################### SM mice only DR #####################
+####### model with mean + summary #######
+method_AC_meta_mean_mice <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "mean",
+    species == "mice"
+  )
+)
+
+summary(method_AC_meta_mean_mice)
+summary_mean_mice <- orchaRd::mod_results(method_AC_meta_mean_mice,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+
+####### model with pub bias mean + summary #######
+method_AC_meta_mean_pub_mice <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "mean",
+    species == "mice"
+  )
+)
+
+summary(method_AC_meta_mean_pub_mice)
+
+summary_mean_pub_mice <- orchaRd::mod_results(method_AC_meta_mean_pub_mice,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+####### model with median + summary #######
+method_AC_meta_median_mice <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% dplyr::filter(
+    m_measure == "median",
+    species == "mice"
+  )
+)
+
+
+summary(method_AC_meta_median_mice)
+summary_median_mice <- orchaRd::mod_results(method_AC_meta_median_mice,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+####### model with pub bias median + summary #######
+method_AC_meta_median_pub_mice <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "median",
+    species == "mice"
+  )
+)
+
+summary(method_AC_meta_median_pub_mice)
+
+summary_median_pub_mice <- orchaRd::mod_results(method_AC_meta_median_pub_mice,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+####### model with all + summary #######
+method_AC_meta_all_mice <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    species == "mice"
+  )
+)
+
+summary(method_AC_meta_all_mice)
+
+summary_all_mice <- orchaRd::mod_results(method_AC_meta_all_mice,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+####### model with pub bias all + summary #######
+method_AC_meta_all_pub_mice <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    species == "mice"
+  )
+)
+
+summary(method_AC_meta_all_pub_mice)
+
+summary_all_pub_mice <- orchaRd::mod_results(method_AC_meta_all_pub_mice,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+
+####### model with mean + summary >keep900 #######
+method_AC_meta_mean_mice_900 <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "mean",
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+summary(method_AC_meta_mean_mice_900)
+summary_mean_mice_900 <- orchaRd::mod_results(method_AC_meta_mean_mice_900,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+
+####### model with pub bias mean + summary >keep900 #######
+method_AC_meta_mean_pub_mice_900 <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "mean",
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+summary(method_AC_meta_mean_pub_mice_900)
+
+summary_mean_pub_mice_900 <- orchaRd::mod_results(method_AC_meta_mean_pub_mice_900,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+####### model with median + summary >keep900 #######
+method_AC_meta_median_mice_900 <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% dplyr::filter(
+    m_measure == "median",
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+
+summary(method_AC_meta_median_mice_900)
+summary_median_mice_900 <- orchaRd::mod_results(method_AC_meta_median_mice_900,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+####### model with pub bias median + summary >keep900 #######
+method_AC_meta_median_pub_mice_900 <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    m_measure == "median",
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+summary(method_AC_meta_median_pub_mice_900)
+
+summary_median_pub_mice_900 <- orchaRd::mod_results(method_AC_meta_median_pub_mice_900,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+####### model with all + summary >keep900 #######
+method_AC_meta_all_mice_900 <- rma.mv(lnrr_laj ~ treatment_overall,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+summary(method_AC_meta_all_mice_900)
+
+summary_all_mice_900 <- orchaRd::mod_results(method_AC_meta_all_mice_900,
+  mod = "treatment_overall",
+  group = "title"
+)
+
+####### model with pub bias all + summary >keep900 #######
+method_AC_meta_all_pub_mice_900 <- rma.mv(
+  lnrr_laj ~ treatment_overall + inv_n_tilda +
+    year.c,
+  V = v_lnrr_laj_1B,
+  test = "t",
+  method = "REML",
+  random = list(~ 1 | title, ~ 1 | id),
+  data = dat %>% filter(
+    species == "mice",
+    mice900_keep == "Y"
+  )
+)
+
+summary(method_AC_meta_all_pub_mice_900)
+
+summary_all_pub_mice_900 <- orchaRd::mod_results(method_AC_meta_all_pub_mice_900,
+  mod = "treatment_overall",
+  group = "title",
+  at = list(inv_n_tilda = 0, year.c = 0)
+)
+
+
+####### graph all effects #######
+
+all_pub_model_mice <- summary_all_pub_mice$mod_table %>%
+  mutate(model = "Adjusted", data = "All Measures", studies = "No Studies Removed")
+
+median_pub_model_mice <- summary_median_pub_mice$mod_table %>%
+  mutate(model = "Adjusted", data = "Medians", studies = "No Studies Removed")
+
+mean_pub_model_mice <- summary_mean_pub_mice$mod_table %>%
+  mutate(model = "Adjusted", data = "Means", studies = "No Studies Removed")
+
+all_model_mice <- summary_all_mice$mod_table %>%
+  mutate(model = "Unadjusted", data = "All Measures", studies = "No Studies Removed")
+
+median_model_mice <- summary_median_mice$mod_table %>%
+  mutate(model = "Unadjusted", data = "Medians", studies = "No Studies Removed")
+
+mean_model_mice <- summary_mean_mice$mod_table %>%
+  mutate(model = "Unadjusted", data = "Means", studies = "No Studies Removed")
+
+all_pub_model_mice_900 <- summary_all_pub_mice_900$mod_table %>%
+  mutate(model = "Adjusted", data = "All Measures", studies = "900-Day Only")
+
+median_pub_model_mice_900 <- summary_median_pub_mice_900$mod_table %>%
+  mutate(model = "Adjusted", data = "Medians", studies = "900-Day Only")
+
+mean_pub_model_mice_900 <- summary_mean_pub_mice_900$mod_table %>%
+  mutate(model = "Adjusted", data = "Means", studies  = "900-Day Only")
+
+all_model_mice_900 <- summary_all_mice_900$mod_table %>%
+  mutate(model = "Unadjusted", data = "All Measures", studies = "900-Day Only")
+
+median_model_mice_900 <- summary_median_mice_900$mod_table %>%
+  mutate(model = "Unadjusted", data = "Medians", studies = "900-Day Only")
+
+mean_model_mice_900 <- summary_mean_mice_900$mod_table %>%
+  mutate(model = "Unadjusted", data = "Means", studies = "900-Day Only")
+
+
+all_mods_mice <- bind_rows(
+  all_pub_model_mice,
+  median_pub_model_mice,
+  mean_pub_model_mice,
+  all_model_mice,
+  median_model_mice,
+  mean_model_mice,
+  all_pub_model_mice_900,
+  median_pub_model_mice_900,
+  mean_pub_model_mice_900,
+  all_model_mice_900,
+  median_model_mice_900,
+  mean_model_mice_900
+) %>%
+  mutate(label = paste0(
+    formatC(estimate, format = "f", digits = 3), " [",
+    formatC(lowerCL, format = "f", digits = 3), ", ",
+    formatC(upperCL, format = "f", digits = 3), "]"
+  ))
+
+ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(species == "mice"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(treatment_overall),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B),
+      group = treatment_overall
+    ),
+    alpha = 0.4,
+    show.legend = F
+  ) +
+  labs(colour = "Species") +
+  scale_colour_manual(values = c("#E69F00")) +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods_mice %>% filter(studies == "No Studies Removed"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.2,
+    linewidth = 0.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(
+    data = all_mods_mice %>% filter(studies == "No Studies Removed"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      colour = model,
+      shape = data
+    ),
+    size = 1.4,
+    stroke = 1.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dotted"
+  ) +
+  labs(
+    colour = "Publication Bias",
+    shape = "Measure",
+    x = "Log Response Ratio",
+    y = NULL,
+    size = NULL
+  ) +
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 18, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 18, face = "bold"),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    plot.margin = margin(20, 20, 80, 20)
+  ) +
+  guides(size = "none") +
+  ggrepel::geom_text_repel(
+    data = all_mods_mice %>% filter(studies == "No Studies Removed"),
+    aes(
+      x = upperCL,
+      y = fct_rev(name),
+      label = label,
+      colour = model,
+      shape = data
+    ),
+    position = position_dodge(width = 0.6),
+    show.legend = F,
+    hjust = -1.2,
+    point.padding = 0.6,
+    box.padding = 0.5,
+    segment.curvature = -0.3,
+    segment.ncp = 3,
+    segment.angle = 20,
+    size = 3.5,
+    fontface = "italic"
+  ) +
+  scale_x_continuous(limits = c(-2, 2)) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5)),
+    shape = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5))
+  ) +
+  ggtitle("All Effects") -> mice_effect_all
+
+ggplot() +
+  ggbeeswarm::geom_quasirandom(
+    data = dat %>% filter(species == "mice",mice900_keep == "Y"),
+    aes(
+      x = lnrr_laj,
+      y = fct_rev(treatment_overall),
+      colour = species,
+      shape = measure_plot,
+      size = 1 / sqrt(v_lnrr_laj_1B),
+      group = treatment_overall
+    ),
+    alpha = 0.4,
+    show.legend = F
+  ) +
+  labs(colour = "Species") +
+  scale_colour_manual(values = c("#E69F00")) +
+  ggnewscale::new_scale_color() +
+  geom_errorbarh(
+    data = all_mods_mice %>% filter(studies == "900-Day Only"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      xmin = lowerCL,
+      xmax = upperCL,
+      colour = model,
+      shape = data
+    ),
+    height = 0.2,
+    linewidth = 0.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(
+    data = all_mods_mice %>% filter(studies == "900-Day Only"),
+    aes(
+      x = estimate,
+      y = fct_rev(name),
+      colour = model,
+      shape = data
+    ),
+    size = 1.4,
+    stroke = 1.7,
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dotted"
+  ) +
+  labs(
+    colour = "Publication Bias",
+    shape = "Measure",
+    x = "Log Response Ratio",
+    y = NULL,
+    size = NULL
+  ) +
+  theme_bw() +
+  scale_colour_manual(values = c("purple", "black")) +
+  scale_shape_manual(values = c("circle", "triangle", "square")) +
+  theme(
+    axis.title.y = element_blank(),
+    text = element_text(size = 18, family = "Montserrat"),
+    legend.key.width = unit(1.6, "cm"),
+    legend.background = element_rect(fill = "transparent", colour = "transparent"),
+    axis.text.y = element_text(size = 18, face = "bold"),
+    panel.grid.minor.x = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    plot.margin = margin(20, 20, 80, 20)
+  ) +
+  guides(size = "none") +
+  ggrepel::geom_text_repel(
+    data = all_mods_mice %>% filter(studies == "900-Day Only"),
+    aes(
+      x = upperCL,
+      y = fct_rev(name),
+      label = label,
+      colour = model,
+      shape = data
+    ),
+    position = position_dodge(width = 0.6),
+    show.legend = F,
+    hjust = -1.2,
+    point.padding = 0.6,
+    box.padding = 0.5,
+    segment.curvature = -0.3,
+    segment.ncp = 3,
+    segment.angle = 20,
+    size = 3.5,
+    fontface = "italic"
+  ) +
+  scale_x_continuous(limits = c(-2, 2)) +
+  guides(
+    colour = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5)),
+    shape = guide_legend(reverse = TRUE, title.position = "top", override.aes = list(size = 5))
+  ) +
+  ggtitle("900 day rule only") -> mice_effect_900
+
+overall_mice <- mice_effect_all + mice_effect_900 +
+  plot_layout(guides = "collect")
+
+
+ggsave("Overall_mice.png", overall_mice, dpi = 600, width = 23, height = 12.5)
