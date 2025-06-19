@@ -1,6 +1,6 @@
 # metaDRMetRap
 
-Data metadata for "Rapamycin, not metformin, mirrors dietary restriction-driven lifespan extension in vertebrates: a meta-analysis"
+Data metadata for "Rapamycin, not metformin, mirrors dietary restriction-driven lifespan extension in vertebrates: a meta-analysis"  
 Paper here: https://onlinelibrary.wiley.com/doi/10.1111/acel.70131  
 Data and Code: https://zenodo.org/records/15673918  
 
