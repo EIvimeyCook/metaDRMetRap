@@ -5,8 +5,8 @@ Paper here: https://onlinelibrary.wiley.com/doi/10.1111/acel.70131
 Data and Code: https://zenodo.org/records/15673918  
 
 Edward R. Ivimey-Cook*@, Zahida Sultanova*@, and Alexei A. Maklakov  
-* these authors contributed equally  
-@ corresponding authors: e.ivimeycook@gmail.com and zahida.sultanova@uea.ac.uk  
+*these authors contributed equally  
+@corresponding authors: e.ivimeycook@gmail.com and zahida.sultanova@uea.ac.uk  
 
 Data: analysis_data.csv  
 Code: create Code folder and run script "Analysis_Script.R". All other scripts are sourced within this one.  
