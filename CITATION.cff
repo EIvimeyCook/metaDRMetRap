@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use these data or code, please cite the paper below."
+type: dataset
+authors:
+  - family-names: "Ivimey-Cook"
+    given-names: "Edward R."
+    orcid: "https://orcid.org/0000-0003-4910-0443"
+  - family-names: "Sultanova"
+    given-names: "Zahida"
+  - family-names: "Maklakov"
+    given-names: "Alexei A."
+title: "Data and code from: 'Rapamycin, Not Metformin, Mirrors Dietary Restriction-Driven Lifespan Extension in Vertebrates: A Meta-Analysis'"
+url: "https://github.com/EIvimeyCook/metaDRMetRap"
+doi: 10.5281/zenodo.15673918
+keywords:
+  - "meta-analysis"
+  - "ageing"
+  - "dietary restriction"
+  - "rapamycin"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Ivimey-Cook"
+      given-names: "Edward R."
+      orcid: "https://orcid.org/0000-0003-4910-0443"
+    - family-names: "Sultanova"
+      given-names: "Zahida"
+    - family-names: "Maklakov"
+      given-names: "Alexei A."
+  title: "Rapamycin, Not Metformin, Mirrors Dietary Restriction-Driven Lifespan Extension in Vertebrates: A Meta-Analysis"
+  journal: "Aging Cell"
+  year: 2025
+  volume: 24
+  issue: 9
+  start: "e70131"
+  doi: 10.1111/acel.70131
