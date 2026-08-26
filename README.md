@@ -110,7 +110,14 @@ R version and packages loaded (with versions): see the `session.txt` file.
 > vertebrates: a meta-analysis. *Aging Cell*.
 > <https://doi.org/10.1111/acel.70131>
 
+A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
+"Cite this repository" button gives formatted APA and BibTeX.
+
 ## Contact
 
 Edward R. Ivimey-Cook — <e.ivimeycook@gmail.com> —
 [ORCID 0000-0003-4910-0443](https://orcid.org/0000-0003-4910-0443)
+
+## License
+
+Released under [MIT](LICENSE).
