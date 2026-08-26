@@ -3,9 +3,11 @@
 </div>
 
 <!-- badges: start -->
-[![Paper](https://img.shields.io/badge/paper-10.1111%2Facel.70131-blue)](https://onlinelibrary.wiley.com/doi/10.1111/acel.70131)
-[![Data & Code](https://img.shields.io/badge/Zenodo-15673918-blue)](https://zenodo.org/records/15673918)
+[![DOI](https://img.shields.io/badge/DOI-10.1111%2Facel.70131-blue)](https://doi.org/10.1111/acel.70131)
+[![Zenodo](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15673918-blue)](https://doi.org/10.5281/zenodo.15673918)
+[![License: GPL-3](https://img.shields.io/badge/license-GPL--3-green)](LICENSE)
 <!-- badges: end -->
+
 
 Data metadata for **"Rapamycin, not metformin, mirrors dietary restriction-driven
 lifespan extension in vertebrates: a meta-analysis"**.
