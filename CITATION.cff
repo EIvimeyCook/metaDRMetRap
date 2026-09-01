@@ -28,10 +28,12 @@ preferred-citation:
     - family-names: "Maklakov"
       given-names: "Alexei A."
   title: "Rapamycin, Not Metformin, Mirrors Dietary Restriction-Driven Lifespan Extension in Vertebrates: A Meta-Analysis"
-  journal: "Aging Cell"
+  journal: *Aging Cell*, 24(9), e70131.
   year: 2025
   volume: 24
   issue: 9
   start: "e70131"
   doi: 10.1111/acel.70131
-  license: MIT
+  license:
+- MIT
+- CC-BY-4.0
