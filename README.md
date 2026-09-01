@@ -120,4 +120,4 @@ Edward R. Ivimey-Cook — <e.ivimeycook@gmail.com> —
 
 ## License
 
-Released under [MIT](LICENSE).
+Released under the [MIT License](LICENSE).
