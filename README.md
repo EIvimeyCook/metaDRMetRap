@@ -43,7 +43,7 @@ Edward R. Ivimey-Cook\*@, Zahida Sultanova\*@, and Alexei A. Maklakov
 | `Analysis_Script.R` | Master analysis script; all other scripts are sourced within this one |
 | `session.txt` | R version and packages loaded, with versions |
 
-Create a `Code` folder and run the script `Analysis_Script.R`.
+Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
 
 ## Data dictionary
 
