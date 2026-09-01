@@ -10,7 +10,7 @@
 <!-- badges: end -->
 
 
-Data metadata for **"Rapamycin, not metformin, mirrors dietary restriction-driven
+Data and code metadata for **"Rapamycin, not metformin, mirrors dietary restriction-driven
 lifespan extension in vertebrates: a meta-analysis"**.
 
 - Paper: <https://onlinelibrary.wiley.com/doi/10.1111/acel.70131>
