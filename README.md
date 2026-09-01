@@ -5,7 +5,7 @@
 <!-- badges: start -->
 [![DOI](https://img.shields.io/badge/DOI-10.1111%2Facel.70131-blue)](https://doi.org/10.1111/acel.70131)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15673918-blue)](https://doi.org/10.5281/zenodo.15673918)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 [![License: CC BY 4.0](https://img.shields.io/badge/data-CC%20BY%204.0-green)](LICENSE-data.md)
 <!-- badges: end -->
 
