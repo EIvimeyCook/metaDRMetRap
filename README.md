@@ -108,7 +108,7 @@ R version and packages loaded (with versions): see the `sessionInfo.txt` file.
 
 > Ivimey-Cook, E. R., Sultanova, Z., & Maklakov, A. A. (2025). Rapamycin, not
 > metformin, mirrors dietary restriction-driven lifespan extension in
-> vertebrates: a meta-analysis. *Aging Cell*.
+> vertebrates: a meta-analysis. *Aging Cell*, 24(9), e70131.
 > <https://doi.org/10.1111/acel.70131>
 
 A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
