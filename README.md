@@ -41,7 +41,7 @@ Edward R. Ivimey-Cook\*@, Zahida Sultanova\*@, and Alexei A. Maklakov
 | :--- | :------- |
 | `analysis_data.csv` | The meta-analytic dataset (911 effect sizes) |
 | `Analysis_Script.R` | Master analysis script; all other scripts are sourced within this one |
-| `session.txt` | R version and packages loaded, with versions |
+| `sessionInfo.txt` | R version and packages loaded, with versions |
 
 Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
 
@@ -101,7 +101,7 @@ Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
 
 ## R environment
 
-R version and packages loaded (with versions): see the `session.txt` file.
+R version and packages loaded (with versions): see the `sessionInfo.txt` file.
 
 ## Citation
 
