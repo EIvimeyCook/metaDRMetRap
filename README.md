@@ -10,7 +10,7 @@
 <!-- badges: end -->
 
 
-Data and code metadata for **"Rapamycin, not metformin, mirrors dietary restriction-driven
+Data and code for **"Rapamycin, not metformin, mirrors dietary restriction-driven
 lifespan extension in vertebrates: a meta-analysis"**.
 
 - Paper: <https://onlinelibrary.wiley.com/doi/10.1111/acel.70131>
@@ -26,8 +26,8 @@ vertebrates had not been assessed systematically.
 This meta-analysis compares lifespan extension under dietary restriction,
 rapamycin, and metformin across vertebrate studies, drawing on 911 effect sizes.
 It finds that rapamycin, but not metformin, mirrors the DR-driven extension of
-lifespan. This repository holds the **data dictionary** for that synthesis; the
-full data and code are archived on Zenodo.
+lifespan. This repository holds the full dataset, the analysis code and a data
+dictionary for that synthesis. An archived copy of the data and code is on Zenodo.
 
 ## Authors
 
@@ -40,11 +40,24 @@ Edward R. Ivimey-Cook\*@, Zahida Sultanova\*@, and Alexei A. Maklakov
 
 | File | Contents |
 | :--- | :------- |
-| `analysis_data.csv` | The meta-analytic dataset (911 effect sizes) |
-| `Analysis_Script.R` | Master analysis script; all other scripts are sourced within this one |
+| `Data/analysis_data.csv` | The meta-analytic dataset (911 effect sizes) |
+| `Code/Analysis_Script.R` | Master analysis script; sources the two scripts below |
+| `Code/missing_sd_funcs.R` | Helper functions for missing SDs and lnRR (sourced by the master script) |
+| `Code/function_orchardsummary.R` | Helper function for model summary tables (sourced by the master script) |
+| `MS_MetRapa_Meta.Rproj` | RStudio project; sets the working directory to the repository root |
 | `sessionInfo.txt` | R version and packages loaded, with versions |
 
-Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
+To reproduce the analysis, run the master script with the repository root as the
+working directory (it uses paths such as `Code/...` and `Data/...`, and fails if
+run from inside `Code/`). Open `MS_MetRapa_Meta.Rproj`, then run:
+
+```r
+source("Code/Analysis_Script.R")
+```
+
+The script writes its figures (32 PNG and 3 PDF files) to the repository root. It
+needs an internet connection to download the Montserrat font and the PhyloPic
+silhouettes.
 
 ## Data dictionary
 
@@ -54,8 +67,8 @@ Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
 
 | Column | Description |
 | :----- | :---------- |
-| `id` | 1:911 unique individual ID |
-| `author list` | List of authors |
+| `id` | Unique effect size (row) ID, 1:911 |
+| `Author list` | List of authors |
 | `title` | Title of paper |
 | `Year` | Year paper was published (extracted from Scopus/WoS) |
 
@@ -92,17 +105,21 @@ Scripts live in a Code folder; run `Analysis_Script.R`, which sources the rest.
 | :----- | :---------- |
 | `Species` | Species sampled |
 | `Treatment_Type` | Type of treatment used (e.g. fasting, percent reduction, rapamycin) |
-| `Treatment_Overall` | Broad treatment groups (Rapamycin, Metformin, DR) |
+| `Treatment_Overall` | Broad treatment groups (`Dietary restriction`, `Metformin`, `Rapamycin`) |
 | `Treatment_Name` | Treatment name in paper |
 | `Sex` | Sex studied |
 | `Strain` | The name of any strain used, if appropriate |
 | `Other Variables` | Whether any other variables were tested in the experiment |
-| `Notes` | Additional notes |
-| `mice900_keep` | Whether or not the mice paper passed the 900 day rule |
+| `notes` | Additional notes |
+| `mice900_keep` | Mouse rows only: whether this effect size passed the 900 day rule (`Y`/`N`), set per row, so one paper can have both values; blank for other species. Used for the 900 day mouse sensitivity models |
 
 ## R environment
 
 R version and packages loaded (with versions): see the `sessionInfo.txt` file.
+It records the environment used for the published analysis: R 4.4.2, with
+package versions including metafor 4.6-0 and orchaRd 2.0. Running
+`Code/Analysis_Script.R` overwrites this file with your own session details, so
+keep a copy or restore it from Git if you need the original.
 
 ## Citation
 
