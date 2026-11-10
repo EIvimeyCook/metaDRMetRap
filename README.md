@@ -48,8 +48,8 @@ Edward R. Ivimey-Cook\*@, Zahida Sultanova\*@, and Alexei A. Maklakov
 | `sessionInfo.txt` | R version and packages loaded, with versions |
 
 To reproduce the analysis, run the master script with the repository root as the
-working directory (it uses paths such as `Code/...` and `Data/...`, and fails if
-run from inside `Code/`). Open `MS_MetRapa_Meta.Rproj`, then run:
+working directory, as its paths (`Code/...`, `Data/...`) are relative to the
+root. Open `MS_MetRapa_Meta.Rproj`, then run:
 
 ```r
 source("Code/Analysis_Script.R")
@@ -118,8 +118,8 @@ silhouettes.
 R version and packages loaded (with versions): see the `sessionInfo.txt` file.
 It records the environment used for the published analysis: R 4.4.2, with
 package versions including metafor 4.6-0 and orchaRd 2.0. Running
-`Code/Analysis_Script.R` overwrites this file with your own session details, so
-keep a copy or restore it from Git if you need the original.
+`Code/Analysis_Script.R` updates this file with your own session details, so
+keep a copy if you want the original.
 
 ## Citation
 
